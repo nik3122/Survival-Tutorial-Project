@@ -83,6 +83,9 @@ void ASurvivalCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ASurvivalCharacter::StartSprinting);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ASurvivalCharacter::StopSprinting);
 
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &ASurvivalCharacter::StartCrouch);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &ASurvivalCharacter::StopCrouch);
+
 	PlayerInputComponent->BindAction("Aiming", IE_Pressed, this, &ASurvivalCharacter::SetIsAiming);
 	PlayerInputComponent->BindAction("Aiming", IE_Released, this, &ASurvivalCharacter::SetIsNotAiming);
 
@@ -161,7 +164,7 @@ void ASurvivalCharacter::MoveForward(float Value)
 		// get forward vector
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-		if (!bIsSprinting)
+		if (!bIsSprinting && !GetCharacterMovement()->IsCrouching())
 			Value *= 0.5f;
 		AddMovementInput(Direction, Value);
 	}
@@ -177,7 +180,7 @@ void ASurvivalCharacter::MoveRight(float Value)
 	
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		if (!bIsSprinting)
+		if (!bIsSprinting && !GetCharacterMovement()->IsCrouching())
 			Value *= 0.5f;
 		// add movement in that direction
 		AddMovementInput(Direction, Value);
@@ -201,6 +204,24 @@ void ASurvivalCharacter::StopSprinting()
 {
 	bIsSprinting = false;
 	PlayerStatComp->ControlSprintingTimer(false);
+}
+
+void ASurvivalCharacter::StartCrouch()
+{
+	if (!GetCharacterMovement()->IsCrouching() && !GetCharacterMovement()->IsFalling())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CROUCHING"));
+		GetCharacterMovement()->bWantsToCrouch = true;
+	}
+}
+
+void ASurvivalCharacter::StopCrouch()
+{
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UNCROUCHING"));
+		GetCharacterMovement()->bWantsToCrouch = false;
+	}
 }
 
 void ASurvivalCharacter::HandleSprinting()

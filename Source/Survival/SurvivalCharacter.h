@@ -75,8 +75,10 @@ protected:
 	void MoveRight(float Value);
 
 	void StartSprinting();
-
 	void StopSprinting();
+
+	void StartCrouch();
+	void StopCrouch();
 
 	void HandleSprinting();
 
