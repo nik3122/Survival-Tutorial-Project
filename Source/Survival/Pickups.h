@@ -11,7 +11,8 @@ enum class EPickupType : uint8
 {
 	EWater UMETA(DisplayName = "Water"),
 	EFood UMETA(DisplayName = "Food"),
-	EHealth UMETA(DisplayName = "Health")
+	EHealth UMETA(DisplayName = "Health"),
+	EKey UMETA(DisplayName = "Key")
 };
 
 UCLASS()

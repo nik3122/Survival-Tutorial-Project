@@ -8,6 +8,7 @@
 #include "SurvivalGameMode.h"
 #include "StorageContainer.h"
 #include "Public/Weapons/WeaponBase.h"
+#include "PUblic/Interactable/Door.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -320,6 +321,10 @@ void ASurvivalCharacter::Interact()
 		{
 			Server_Interact();
 		}
+		else if (Cast<ADoor>(Actor))
+		{
+			Server_Interact();
+		}
 	}
 }
 
@@ -363,6 +368,10 @@ void ASurvivalCharacter::Server_Interact_Implementation()
 				Weapon = HitWeapon;
 				Weapon->SetOwner(this);
 				OnRep_WeaponIteracted();
+			}
+			else if (ADoor* Door = Cast<ADoor>(Actor))
+			{
+				Door->ToggleDoor(this);
 			}
 		}
 	}

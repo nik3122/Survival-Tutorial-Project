@@ -39,7 +39,7 @@ void APickups::BeginPlay()
 
 void APickups::UseItem(ASurvivalCharacter* Player)
 {
-	if (Role == ROLE_Authority)
+	if (Role == ROLE_Authority && PickupType != EPickupType::EKey)
 	{
 		if (PickupType == EPickupType::EFood)
 		{
@@ -59,7 +59,6 @@ void APickups::UseItem(ASurvivalCharacter* Player)
 		Destroy();
 	}
 }
-
 
 void APickups::OnRep_PickedUp()
 {
