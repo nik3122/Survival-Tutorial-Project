@@ -41,7 +41,10 @@ protected:
 
 	void RotateDoor();
 
+	bool CanInteract(class ASurvivalCharacter* Player);
+	bool PlayerHasKey(class ASurvivalCharacter* Player);
+
 public:	
 	void ToggleDoor(class ASurvivalCharacter* Player);
-
+	void LockDoor(bool Lock, class ASurvivalCharacter* Player);
 };

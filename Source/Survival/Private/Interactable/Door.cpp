@@ -68,6 +68,43 @@ void ADoor::RotateDoor()
 	}
 }
 
+bool ADoor::CanInteract(ASurvivalCharacter* Player)
+{
+	if (Player)
+	{
+		if ((!bDoorLocked || PlayerHasKey(Player)) && this->GetDistanceTo(Player) < 200.0f)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool ADoor::PlayerHasKey(class ASurvivalCharacter* Player)
+{
+	if (Player)
+	{
+		if (UInventory* PlayersInventory = Player->GetInventoryComponent())
+		{
+			TArray<APickups*> InventoryItems = PlayersInventory->GetInventoryItems();
+			for (APickups* Item : InventoryItems)
+			{
+				if (Item)
+				{
+					if (ADoorKey* Key = Cast<ADoorKey>(Item))
+					{
+						if (this == Key->GetLinkedDoor())
+						{
+							return true;
+						}
+					}
+				}
+			}
+		}
+	}
+	return false;
+}
+
 void ADoor::OnRep_ToggleDoor()
 {
 	GetWorld()->GetTimerManager().UnPauseTimer(THDoor);
@@ -77,33 +114,35 @@ void ADoor::ToggleDoor(class ASurvivalCharacter* Player)
 {
 	if (Role == ROLE_Authority)
 	{
+		if (bDoorOpen)
+		{
+			bDoorOpen = !bDoorOpen;
+			OnRep_ToggleDoor();
+			return;
+		}
 		if (bDoorLocked)
 		{
-			if (UInventory* PlayersInventory = Player->GetInventoryComponent())
+			if (CanInteract(Player))
 			{
-				TArray<APickups*> InventoryItems = PlayersInventory->GetInventoryItems();
-				for (APickups* Item : InventoryItems)
-				{
-					if (Item)
-					{
-						if (ADoorKey* Key = Cast<ADoorKey>(Item))
-						{
-							if (this == Key->GetLinkedDoor())
-							{
-								bDoorLocked = false;
-								bDoorOpen = !bDoorOpen;
-								OnRep_ToggleDoor();
-								break;
-							}
-						}
-					}
-				}
+				bDoorOpen = !bDoorOpen;
+				OnRep_ToggleDoor();
 			}
 		}
 		else
 		{
 			bDoorOpen = !bDoorOpen;
 			OnRep_ToggleDoor();
+		}
+	}
+}
+
+void ADoor::LockDoor(bool Lock, ASurvivalCharacter* Player)
+{
+	if (Role == ROLE_Authority)
+	{
+		if (bDoorLocked != Lock && CanInteract(Player))
+		{
+			bDoorLocked = Lock;
 		}
 	}
 }

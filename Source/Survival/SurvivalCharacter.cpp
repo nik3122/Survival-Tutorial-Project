@@ -67,8 +67,17 @@ ASurvivalCharacter::ASurvivalCharacter()
 		InventoryWidgetClass = InventoryRef.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UUserWidget> DoorRef(TEXT("/Game/BlueprintClasses/DoorControl"));
+
+	if (DoorRef.Class)
+	{
+		DoorWidgetClass = DoorRef.Class;
+	}
+
 	bIsSprinting = false;
 	bIsAiming = false;
+	DoubleClicked = false;
+	InteractingDoor = nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -93,7 +102,8 @@ void ASurvivalCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	PlayerInputComponent->BindAxis("MoveForward", this, &ASurvivalCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &ASurvivalCharacter::MoveRight);
 
-	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ASurvivalCharacter::Interact);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ASurvivalCharacter::SingleInteract);
+	PlayerInputComponent->BindAction("Interact", IE_DoubleClick, this, &ASurvivalCharacter::DoubleInteract);
 
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &ASurvivalCharacter::OpenCloseInventory);
 
@@ -301,7 +311,73 @@ void ASurvivalCharacter::OpenCloseInventory()
 	}
 }
 
-void ASurvivalCharacter::Interact()
+void ASurvivalCharacter::OpenDoorWidget()
+{
+	if (DoorWidget && DoorWidget->IsInViewport())
+	{
+		DoorWidget->RemoveFromViewport();
+		if (APlayerController* PController = GetController()->CastToPlayerController())
+		{
+			PController->bShowMouseCursor = false;
+			PController->SetInputMode(FInputModeGameOnly());
+		}
+	}
+	else
+	{
+		DoorWidget = CreateWidget<UUserWidget>(GetWorld(), DoorWidgetClass);
+		if (DoorWidget)
+		{
+			DoorWidget->AddToViewport();
+			if (APlayerController* PController = GetController()->CastToPlayerController())
+			{
+				PController->bShowMouseCursor = true;
+				PController->SetInputMode(FInputModeGameAndUI());
+			}
+		}
+	}
+}
+
+void ASurvivalCharacter::LockDoor(bool Lock)
+{
+	if (InteractingDoor)
+	{
+		Server_LockDoor(Lock, InteractingDoor);
+	}
+}
+
+bool ASurvivalCharacter::Server_LockDoor_Validate(bool Lock, ADoor* Door)
+{
+	return true;
+}
+
+void ASurvivalCharacter::Server_LockDoor_Implementation(bool Lock, ADoor* Door)
+{
+	if (Door)
+	{
+		Door->LockDoor(Lock, this);
+	}
+}
+
+void ASurvivalCharacter::DoubleInteract()
+{
+	DoubleClicked = true;
+	Interact(true);
+}
+
+void ASurvivalCharacter::CheckDoubleInteract()
+{
+	if (DoubleClicked)
+		DoubleClicked = false;
+	else
+		Interact(false);
+}
+
+void ASurvivalCharacter::SingleInteract()
+{
+	GetWorld()->GetTimerManager().SetTimer(THDoubleInteract, this, &ASurvivalCharacter::CheckDoubleInteract, 0.2f, false);
+}
+
+void ASurvivalCharacter::Interact(bool WasDoubleClick)
 {
 	FVector Start = GetMesh()->GetBoneLocation(FName("head"));
 	FVector End = Start + FollowCamera->GetForwardVector() * 170.0f;
@@ -309,21 +385,32 @@ void ASurvivalCharacter::Interact()
 	if (AActor* Actor = HitResult.GetActor())
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("HIT ACTOR: %s"), *Actor->GetName());
-		if (Cast<APickups>(Actor))
+		if (WasDoubleClick)
 		{
-			Server_Interact();
+			if (ADoor* Door = Cast<ADoor>(Actor))
+			{
+				InteractingDoor = Door;
+				OpenDoorWidget();
+			}
 		}
-		else if (Cast<AStorageContainer>(Actor))
+		else
 		{
-			Server_Interact();
-		}
-		else if (Cast<AWeaponBase>(Actor))
-		{
-			Server_Interact();
-		}
-		else if (Cast<ADoor>(Actor))
-		{
-			Server_Interact();
+			if (Cast<APickups>(Actor))
+			{
+				Server_Interact();
+			}
+			else if (Cast<AStorageContainer>(Actor))
+			{
+				Server_Interact();
+			}
+			else if (Cast<AWeaponBase>(Actor))
+			{
+				Server_Interact();
+			}
+			else if (Cast<ADoor>(Actor))
+			{
+				Server_Interact();
+			}
 		}
 	}
 }

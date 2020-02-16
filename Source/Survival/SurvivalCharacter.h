@@ -37,6 +37,9 @@ protected:
 	TSubclassOf<class UUserWidget> InventoryWidgetClass;
 	class UUserWidget* InventoryWidget;
 
+	TSubclassOf<class UUserWidget> DoorWidgetClass;
+	class UUserWidget* DoorWidget;
+
 	UPROPERTY(ReplicatedUsing = OnRep_OpenCloseInventory)
 		class AStorageContainer* OpenedContainer;
 
@@ -63,6 +66,8 @@ protected:
 		void Server_Aim(bool Aiming);
 	bool Server_Aim_Validate(bool Aiming);
 	void Server_Aim_Implementation(bool Aiming);
+
+	bool DoubleClicked;
 
 	UFUNCTION(BlueprintPure)
 		FString ReturnPlayerStats();
@@ -95,7 +100,24 @@ protected:
 
 	void OpenCloseInventory();
 
-	void Interact();
+	void OpenDoorWidget();
+
+	UFUNCTION(BlueprintCallable)
+		void LockDoor(bool Lock);
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_LockDoor(bool Lock, class ADoor* Door);
+	bool Server_LockDoor_Validate(bool Lock, class ADoor* Door);
+	void Server_LockDoor_Implementation(bool Lock, class ADoor* Door);
+
+	class ADoor* InteractingDoor;
+
+	void DoubleInteract();
+	void CheckDoubleInteract();
+	void SingleInteract();
+	FTimerHandle THDoubleInteract;
+
+	void Interact(bool WasDoubleClick);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 		void Server_Interact();
