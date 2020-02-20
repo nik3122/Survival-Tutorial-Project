@@ -8,7 +8,8 @@
 #include "SurvivalGameMode.h"
 #include "StorageContainer.h"
 #include "Public/Weapons/WeaponBase.h"
-#include "PUblic/Interactable/Door.h"
+#include "Public/Weapons/MagazineBase.h"
+#include "Public/Interactable/Door.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -411,6 +412,11 @@ void ASurvivalCharacter::Interact(bool WasDoubleClick)
 			{
 				Server_Interact();
 			}
+			else if (Cast<AMagazineBase>(Actor))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE CLIENT"));
+				Server_Interact();
+			}
 		}
 	}
 }
@@ -452,6 +458,7 @@ void ASurvivalCharacter::Server_Interact_Implementation()
 			}
 			else if (AWeaponBase* HitWeapon = Cast<AWeaponBase>(Actor))
 			{
+				UE_LOG(LogTemp, Warning, TEXT("PICKING UP WEAPON SERVER"));
 				Weapon = HitWeapon;
 				Weapon->SetOwner(this);
 				OnRep_WeaponIteracted();
@@ -459,6 +466,11 @@ void ASurvivalCharacter::Server_Interact_Implementation()
 			else if (ADoor* Door = Cast<ADoor>(Actor))
 			{
 				Door->ToggleDoor(this);
+			}
+			else if (AMagazineBase* Magazine = Cast<AMagazineBase>(Actor))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE SERVER"));
+				Magazine->Pickup();
 			}
 		}
 	}

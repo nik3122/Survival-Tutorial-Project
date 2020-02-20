@@ -45,6 +45,9 @@ protected:
 	UPROPERTY(EditAnywhere)
 		FName DefaultWeaponName;
 
+	TArray<class AMagazineBase*> ExtraMagazines;
+	class AMagazineBase* CurrentMagazine;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

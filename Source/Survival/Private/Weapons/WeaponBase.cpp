@@ -4,6 +4,7 @@
 #include "Public/Weapons/WeaponBase.h"
 #include "SurvivalCharacter.h"
 #include "LineTrace.h"
+#include "Public/Weapons/MagazineBase.h"
 
 #include "Components/SkeletalMeshComponent.h"
 
@@ -16,6 +17,7 @@ AWeaponBase::AWeaponBase()
 	LineTraceComp = CreateDefaultSubobject<ULineTrace>("LineTraceComponent");
 
 	DefaultWeaponName = FName("");
+	CurrentMagazine = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -42,20 +44,26 @@ void AWeaponBase::SetupWeapon(FName WeaponName)
 
 FHitResult AWeaponBase::Fire()
 {
-	if (Role < ROLE_Authority)
+	if (Role < ROLE_Authority && CurrentMagazine)
 	{
-		if (WeaponData && WeaponData->FireAnimation)
+		if (CurrentMagazine->CurrentAmmo() > 0)
 		{
-			MeshComp->PlayAnimation(WeaponData->FireAnimation, false);
+			if (WeaponData && WeaponData->FireAnimation)
+			{
+				MeshComp->PlayAnimation(WeaponData->FireAnimation, false);
+			}
+
+			FVector StartLocation = MeshComp->GetSocketLocation(FName("s_muzzle"));
+			FRotator Rotation = MeshComp->GetSocketRotation(FName("s_muzzle"));
+			FVector EndLocation = StartLocation + Rotation.Vector() * 3500.0f;
+
+			FHitResult HitResult = LineTraceComp->LineTraceSingle(StartLocation, EndLocation, true);
+
+			CurrentMagazine->Fire();
+			return HitResult;
 		}
-
-		FVector StartLocation = MeshComp->GetSocketLocation(FName("s_muzzle"));
-		FRotator Rotation = MeshComp->GetSocketRotation(FName("s_muzzle"));
-		FVector EndLocation = StartLocation + Rotation.Vector() * 3500.0f;
-
-		FHitResult HitResult = LineTraceComp->LineTraceSingle(StartLocation, EndLocation, true);
-
-		return HitResult;
+		else
+			return FHitResult();
 	}
 	else
 	{
@@ -89,34 +97,40 @@ bool AWeaponBase::IsValidShot(FHitResult ClientHitResult, FHitResult ServerHitRe
 
 FHitResult AWeaponBase::Fire(FHitResult ClientHitResult)
 {
-	if (Role == ROLE_Authority)
+	if (Role == ROLE_Authority && CurrentMagazine)
 	{
-		FVector StartLocation = MeshComp->GetSocketLocation(FName("s_muzzle"));
-
-		if (AActor* HitActor = ClientHitResult.GetActor())
+		if (CurrentMagazine->CurrentAmmo() > 0)
 		{
-			FRotator Rotation = MeshComp->GetSocketRotation(FName("s_muzzle"));
-			FVector EndLocation = StartLocation + Rotation.Vector() * 3500.0f;
+			FVector StartLocation = MeshComp->GetSocketLocation(FName("s_muzzle"));
 
-			FHitResult ServerHitResult = LineTraceComp->LineTraceSingle(StartLocation, EndLocation, true);
-
-			if (IsValidShot(ClientHitResult, ServerHitResult))
+			if (AActor* HitActor = ClientHitResult.GetActor())
 			{
-				if (ASurvivalCharacter* Player = Cast<ASurvivalCharacter>(HitActor))
+				FRotator Rotation = MeshComp->GetSocketRotation(FName("s_muzzle"));
+				FVector EndLocation = StartLocation + Rotation.Vector() * 3500.0f;
+
+				FHitResult ServerHitResult = LineTraceComp->LineTraceSingle(StartLocation, EndLocation, true);
+
+				if (IsValidShot(ClientHitResult, ServerHitResult))
 				{
-					float TestDamage = 20.0f;
-					Player->TakeDamage(TestDamage, FDamageEvent(), nullptr, GetOwner());
+					if (ASurvivalCharacter* Player = Cast<ASurvivalCharacter>(HitActor))
+					{
+						float TestDamage = 20.0f;
+						Player->TakeDamage(TestDamage, FDamageEvent(), nullptr, GetOwner());
+					}
+				}
+				else//play hit object effects
+				{
+
 				}
 			}
-			else//play hit object effects
+			else//nothing hit
 			{
 
 			}
+			CurrentMagazine->Fire();
 		}
-		else//nothing hit
-		{
-
-		}
+		else
+			return FHitResult();
 	}
 	return FHitResult();
 }
