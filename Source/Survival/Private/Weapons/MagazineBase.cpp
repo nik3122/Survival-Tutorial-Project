@@ -14,13 +14,15 @@ AMagazineBase::AMagazineBase()
 	bReplicates = true;
 	CurrentMagazineAmmo = 0;
 	MagazineInUse = false;
+	IsDraggedIntoWorld = false;
 }
 
 // Called when the game starts or when spawned
 void AMagazineBase::BeginPlay()
 {
 	Super::BeginPlay();
-	SetupMagazine(FName("AR-15Mag"), false);
+	if (IsDraggedIntoWorld)
+		SetupMagazine(FName("AR-15Mag"), false);
 }
 
 void AMagazineBase::OnRep_MagazineInUse()
@@ -56,10 +58,10 @@ void AMagazineBase::SetupMagazine(FName MagazineName, bool IsForWeapon)
 		{
 			MeshComp->SetStaticMesh(MagazineData->MagazineMesh);
 			CurrentMagazineAmmo = MagazineData->MagazineCapacity;
+			this->MeshComp->SetHiddenInGame(IsForWeapon);
+			this->SetActorEnableCollision(!IsForWeapon);
 		}
 	}
-	this->MeshComp->SetHiddenInGame(IsForWeapon);
-	this->SetActorEnableCollision(!IsForWeapon);
 }
 
 int AMagazineBase::CurrentAmmo()
@@ -70,4 +72,13 @@ int AMagazineBase::CurrentAmmo()
 void AMagazineBase::Fire()
 {
 	--CurrentMagazineAmmo;
+}
+
+TArray<FString> AMagazineBase::GetCompatibleWeapons()
+{
+	if (MagazineData)
+	{
+		return MagazineData->CompatibleWeapons;
+	}
+	return TArray<FString>();
 }

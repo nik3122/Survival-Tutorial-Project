@@ -19,6 +19,12 @@ struct FWeaponData : public FTableRowBase
 		FString WeaponName;
 
 	UPROPERTY(EditAnywhere)
+		TArray<FName> MagazineRowNames;
+
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<class AMagazineBase> BPMagazineClass;
+
+	UPROPERTY(EditAnywhere)
 		class UAnimationAsset* FireAnimation;
 };
 
@@ -45,9 +51,17 @@ protected:
 	UPROPERTY(EditAnywhere)
 		FName DefaultWeaponName;
 
-	TArray<class AMagazineBase*> ExtraMagazines;
-	class AMagazineBase* CurrentMagazine;
+	UPROPERTY(Replicated)
+		TArray<class AMagazineBase*> ExtraMagazines;
+	UPROPERTY(Replicated)
+		class AMagazineBase* CurrentMagazine;
 
+	UPROPERTY(ReplicatedUsing = OnRep_MagazinesSpawned)
+		bool DefaultMagazinesSpawned;
+
+	UFUNCTION()
+		void OnRep_MagazinesSpawned();
+	void MagsSpawned();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -56,6 +70,10 @@ protected:
 
 public:
 	void SetupWeapon(FName WeaponName);
+	bool CanReloadWeapon();
+	void ReloadWeapon();
 	FHitResult Fire();
 	FHitResult Fire(FHitResult ClientHitResult);
+	bool IsCompatibleMagazine(class AMagazineBase* Magazine);
+	void AddMagazine(class AMagazineBase* Magazine);
 };

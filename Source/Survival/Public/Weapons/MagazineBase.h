@@ -48,6 +48,9 @@ protected:
 
 	FMagazineData* MagazineData;
 
+	UPROPERTY(EditAnywhere)
+		bool IsDraggedIntoWorld;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -60,4 +63,5 @@ public:
 	void SetupMagazine(FName MagazineName, bool IsForWeapon);
 	int CurrentAmmo();
 	void Fire();
+	TArray<FString> GetCompatibleWeapons();
 };

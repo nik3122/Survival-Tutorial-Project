@@ -109,6 +109,7 @@ void ASurvivalCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 	PlayerInputComponent->BindAction("Inventory", IE_Pressed, this, &ASurvivalCharacter::OpenCloseInventory);
 
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &ASurvivalCharacter::Attack);
+	PlayerInputComponent->BindAction("ReloadWeapon", IE_Pressed, this, &ASurvivalCharacter::Reload);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -412,10 +413,16 @@ void ASurvivalCharacter::Interact(bool WasDoubleClick)
 			{
 				Server_Interact();
 			}
-			else if (Cast<AMagazineBase>(Actor))
+			else if (AMagazineBase* Magazine = Cast<AMagazineBase>(Actor))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE CLIENT"));
-				Server_Interact();
+				if (Weapon != nullptr)
+				{
+					if (Weapon->IsCompatibleMagazine(Magazine))
+					{
+						UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE CLIENT"));
+						Server_Interact();
+					}
+				}
 			}
 		}
 	}
@@ -469,8 +476,14 @@ void ASurvivalCharacter::Server_Interact_Implementation()
 			}
 			else if (AMagazineBase* Magazine = Cast<AMagazineBase>(Actor))
 			{
-				UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE SERVER"));
-				Magazine->Pickup();
+				if (Weapon != nullptr)
+				{
+					if (Weapon->IsCompatibleMagazine(Magazine))
+					{
+						UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE SERVER"));
+						Weapon->AddMagazine(Magazine);
+					}
+				}
 			}
 		}
 	}
@@ -525,6 +538,33 @@ void ASurvivalCharacter::Server_Attack_Implementation(FHitResult HitResult)
 	if (Role == ROLE_Authority && Weapon)
 	{
 		Weapon->Fire(HitResult);
+	}
+}
+
+void ASurvivalCharacter::Reload()
+{
+	if (Weapon)
+	{
+		if (Weapon->CanReloadWeapon())
+		{
+			Server_Reload();
+		}
+	}
+}
+
+bool ASurvivalCharacter::Server_Reload_Validate()
+{
+	return true;
+}
+
+void ASurvivalCharacter::Server_Reload_Implementation()
+{
+	if (Weapon)
+	{
+		if (Weapon->CanReloadWeapon())
+		{
+			Weapon->ReloadWeapon();
+		}
 	}
 }
 

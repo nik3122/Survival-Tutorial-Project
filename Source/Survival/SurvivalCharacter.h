@@ -136,6 +136,13 @@ protected:
 	bool Server_Attack_Validate(FHitResult HitResult);
 	void Server_Attack_Implementation(FHitResult HitResult);
 
+	void Reload();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_Reload();
+	bool Server_Reload_Validate();
+	void Server_Reload_Implementation();
+
 	void Die();
 
 	UFUNCTION(NetMulticast, Reliable, WithValidation)
