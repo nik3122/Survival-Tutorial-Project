@@ -60,6 +60,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void DropItem(class APickups* Item);
 
+	void RemoveItem(class APickups* Item);
+
 	UFUNCTION(BlueprintCallable)
 		void UseItem(class APickups* Item);
 

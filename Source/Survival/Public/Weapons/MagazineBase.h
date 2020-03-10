@@ -22,6 +22,9 @@ struct FMagazineData : public FTableRowBase
 		TArray<FString> CompatibleWeapons;
 
 	UPROPERTY(EditAnywhere)
+		TArray<FName> CompatibleAmmo;
+
+	UPROPERTY(EditAnywhere)
 		int MagazineCapacity;
 };
 
@@ -47,6 +50,7 @@ protected:
 		UDataTable* MagazineDataTable;
 
 	FMagazineData* MagazineData;
+
 
 	UPROPERTY(EditAnywhere)
 		bool IsDraggedIntoWorld;

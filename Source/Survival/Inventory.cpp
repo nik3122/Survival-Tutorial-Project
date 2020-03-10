@@ -130,19 +130,15 @@ bool UInventory::CheckIfClientHasItem(APickups* Item)
 
 bool UInventory::RemoveItemFromInventory(APickups* Item)
 {
-	if (GetOwnerRole() == ROLE_Authority)
+	int32 Counter = 0;
+	for (APickups* Pickup : Items)
 	{
-		int32 Counter = 0;
-		for (APickups* Pickup : Items)
+		if (Pickup == Item)
 		{
-			if (Pickup == Item)
-			{
-				Items.RemoveAt(Counter);
-				return true;
-			}
-			++Counter;
+			Items.RemoveAt(Counter);
+			return true;
 		}
-		return false;
+		++Counter;
 	}
 	return false;
 }
@@ -191,6 +187,11 @@ void UInventory::Server_DropItem_Implementation(APickups* Item)
 void UInventory::DropItem(APickups* Item)
 {
 	Server_DropItem(Item);
+}
+
+void UInventory::RemoveItem(APickups* Item)
+{
+	RemoveItemFromInventory(Item);
 }
 
 bool UInventory::Server_UseItem_Validate(APickups* Item)

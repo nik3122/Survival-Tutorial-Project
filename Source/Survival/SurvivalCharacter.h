@@ -143,6 +143,13 @@ protected:
 	bool Server_Reload_Validate();
 	void Server_Reload_Implementation();
 
+	void Throw();
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_Throw(FVector ClientHeadLocation, FRotator ControlRotation);
+	bool Server_Throw_Validate(FVector ClientHeadLocation, FRotator ControlRotation);
+	void Server_Throw_Implementation(FVector ClientHeadLocation, FRotator ControlRotation);
+
 	void Die();
 
 	UFUNCTION(NetMulticast, Reliable, WithValidation)

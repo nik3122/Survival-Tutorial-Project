@@ -10,6 +10,7 @@
 #include "Public/Weapons/WeaponBase.h"
 #include "Public/Weapons/MagazineBase.h"
 #include "Public/Interactable/Door.h"
+#include "Public/Weapons/GrenadeBase.h"
 
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -110,6 +111,7 @@ void ASurvivalCharacter::SetupPlayerInputComponent(class UInputComponent* Player
 
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &ASurvivalCharacter::Attack);
 	PlayerInputComponent->BindAction("ReloadWeapon", IE_Pressed, this, &ASurvivalCharacter::Reload);
+	PlayerInputComponent->BindAction("Throw", IE_Pressed, this, &ASurvivalCharacter::Throw);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
@@ -566,6 +568,54 @@ void ASurvivalCharacter::Server_Reload_Implementation()
 			Weapon->ReloadWeapon();
 		}
 	}
+}
+
+void ASurvivalCharacter::Throw()
+{
+	if (Inventory)
+	{
+		for (APickups* Item : Inventory->GetInventoryItems())
+		{
+			if (Item)
+			{
+				if (AGrenadeBase* Grenade = Cast<AGrenadeBase>(Item))
+				{
+					Inventory->RemoveItem(Grenade);
+					Server_Throw(this->GetMesh()->GetBoneLocation(FName("head")), this->GetControlRotation());
+					return;
+				}
+			}
+		}
+	}
+}
+
+bool ASurvivalCharacter::Server_Throw_Validate(FVector ClientHeadLocation, FRotator ControlRotation)
+{
+	return true;
+}
+
+void ASurvivalCharacter::Server_Throw_Implementation(FVector ClientHeadLocation, FRotator ControlRotation)
+{
+	if (Inventory)
+	{
+		for (APickups* Item : Inventory->GetInventoryItems())
+		{
+			if (Item)
+			{
+				if (AGrenadeBase* Grenade = Cast<AGrenadeBase>(Item))
+				{
+					FVector ServerHeadLocation = this->GetMesh()->GetBoneLocation(FName("head"));
+					if (FVector::Distance(ServerHeadLocation, ClientHeadLocation) < 50.0f)//fix later
+					{
+						Grenade->Throw(ClientHeadLocation, ControlRotation);
+						Inventory->RemoveItem(Grenade);
+					}
+					return;
+				}
+			}
+		}
+	}
+
 }
 
 void ASurvivalCharacter::SetIsAiming()

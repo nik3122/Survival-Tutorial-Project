@@ -15,7 +15,7 @@ UPlayerStatComponent::UPlayerStatComponent()
 	HungerDecrementValue = 0.5f;
 	Thirst = 50.0f;
 	ThirstDecrementValue = 0.5f;
-	Health = 50.0f;
+	Health = 100.0f;
 
 	Stamina = 100.0f;
 }

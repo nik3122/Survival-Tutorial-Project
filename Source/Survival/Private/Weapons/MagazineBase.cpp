@@ -21,6 +21,7 @@ AMagazineBase::AMagazineBase()
 void AMagazineBase::BeginPlay()
 {
 	Super::BeginPlay();
+
 	if (IsDraggedIntoWorld)
 		SetupMagazine(FName("AR-15Mag"), false);
 }
