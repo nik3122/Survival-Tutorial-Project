@@ -3,6 +3,7 @@
 #include "SurvivalCharacter.h"
 #include "PlayerStatComponent.h"
 #include "LineTrace.h"
+#include "Public/COmponents/ChatComponent.h"
 #include "Pickups.h"
 #include "Inventory.h"
 #include "SurvivalGameMode.h"
@@ -52,7 +53,6 @@ ASurvivalCharacter::ASurvivalCharacter()
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f; // The camera follows at this distance behind the character	
 	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
-
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
@@ -61,6 +61,7 @@ ASurvivalCharacter::ASurvivalCharacter()
 	PlayerStatComp = CreateDefaultSubobject<UPlayerStatComponent>("PlayerStatComponent");
 	Inventory = CreateDefaultSubobject<UInventory>("InventoryComponent");
 	LineTraceComp = CreateDefaultSubobject<ULineTrace>("LineTraceComponent");
+	ChatComponent = CreateDefaultSubobject<UChatComponent>("ChatComponent");
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> InventoryRef(TEXT("/Game/BlueprintClasses/InventoryWIdgets/InventoryBase"));
 
@@ -223,6 +224,7 @@ void ASurvivalCharacter::StopSprinting()
 
 void ASurvivalCharacter::StartCrouch()
 {
+	GetChatComponent()->SendMessage(FString("Test Message"));
 	if (!GetCharacterMovement()->IsCrouching() && !GetCharacterMovement()->IsFalling())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CROUCHING"));
@@ -672,6 +674,11 @@ float ASurvivalCharacter::TakeDamage(float Damage, FDamageEvent const & DamageEv
 UInventory* ASurvivalCharacter::GetInventoryComponent()
 {
 	return Inventory;
+}
+
+UChatComponent* ASurvivalCharacter::GetChatComponent()
+{
+	return ChatComponent;
 }
 
 AStorageContainer* ASurvivalCharacter::GetOpenedContainer()

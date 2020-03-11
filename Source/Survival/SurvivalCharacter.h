@@ -32,6 +32,8 @@ public:
 protected:
 	class ULineTrace* LineTraceComp;
 
+	class UChatComponent* ChatComponent;
+
 	class UInventory* Inventory;
 
 	TSubclassOf<class UUserWidget> InventoryWidgetClass;
@@ -187,6 +189,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		class UInventory* GetInventoryComponent();
+
+	UFUNCTION(BlueprintCallable)
+		class UChatComponent* GetChatComponent();
 
 	UFUNCTION(BlueprintCallable)
 		class AStorageContainer* GetOpenedContainer();
