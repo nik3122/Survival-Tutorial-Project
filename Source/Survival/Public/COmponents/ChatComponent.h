@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "ChatComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FChatReceived);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FChatReceived, FText, ChatMessage);
 
 UCLASS( ClassGroup=(Blueprintable), meta=(BlueprintSpawnableComponent) )
 class SURVIVAL_API UChatComponent : public UActorComponent
@@ -18,28 +18,32 @@ public:
 	UChatComponent();
 
 protected:
-	TArray<FString> ChatMessages;
+	int MinimumTimeBetweenMessages;
+
+	FDateTime Time;
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	UFUNCTION(Server, Reliable, WithValidation)
-		void Server_SendMessage(const FString& Message);
-	bool Server_SendMessage_Validate(const FString& Message);
-	void Server_SendMessage_Implementation(const FString& Message);
+		void Server_SendMessage(const FText& Message);
+	bool Server_SendMessage_Validate(const FText& Message);
+	void Server_SendMessage_Implementation(const FText& Message);
 
 	UFUNCTION(Client, Reliable)
-		void Client_ReceiveMessage(const FString& Message);
-	void Client_ReceiveMessage_Implementation(const FString& Message);
+		void Client_ReceiveMessage(const FText& Message);
+	void Client_ReceiveMessage_Implementation(const FText& Message);
+
+	bool ValidWaitTimeForMessage();
 
 	UPROPERTY(BlueprintAssignable)
 		FChatReceived ChatReceived;
 
 public:
 	UFUNCTION(BlueprintCallable)
-		void SendMessage(FString Message);
+		void SendMessage(FText Message);
 
 	UFUNCTION(BlueprintCallable)
-		TArray<FString> GetChatMessages();
+		FText GetSafeMessage(FText Message);
 };

@@ -224,7 +224,7 @@ void ASurvivalCharacter::StopSprinting()
 
 void ASurvivalCharacter::StartCrouch()
 {
-	GetChatComponent()->SendMessage(FString("Test Message"));
+	//GetChatComponent()->SendMessage(FString("Test Message To TEST CHAT"));
 	if (!GetCharacterMovement()->IsCrouching() && !GetCharacterMovement()->IsFalling())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("CROUCHING"));
