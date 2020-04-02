@@ -8,6 +8,7 @@
 
 #include "Components/SkeletalMeshComponent.h"
 #include "TimerManager.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values
@@ -175,7 +176,7 @@ void AWeaponBase::ReloadWeapon()
 	}
 }
 
-FHitResult AWeaponBase::Fire()
+FHitResult AWeaponBase::Fire(FVector ImpactPoint)
 {
 	if (Role < ROLE_Authority && CurrentMagazine)
 	{
@@ -188,7 +189,7 @@ FHitResult AWeaponBase::Fire()
 
 			FVector StartLocation = MeshComp->GetSocketLocation(FName("s_muzzle"));
 			FRotator Rotation = MeshComp->GetSocketRotation(FName("s_muzzle"));
-			FVector EndLocation = StartLocation + Rotation.Vector() * 3500.0f;
+			FVector EndLocation = StartLocation + UKismetMathLibrary::FindLookAtRotation(StartLocation, ImpactPoint).Vector() * 3500.0f;
 
 			FHitResult HitResult = LineTraceComp->LineTraceSingle(StartLocation, EndLocation, true);
 

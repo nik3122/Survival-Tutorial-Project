@@ -23,6 +23,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "Blueprint/UserWidget.h"
 #include "TimerManager.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Net/UnrealNetwork.h"
 
 //////////////////////////////////////////////////////////////////////////
@@ -81,6 +82,7 @@ ASurvivalCharacter::ASurvivalCharacter()
 	bIsAiming = false;
 	DoubleClicked = false;
 	InteractingDoor = nullptr;
+	PlayerPitch = 0.0f;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -155,6 +157,7 @@ void ASurvivalCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >&
 	DOREPLIFETIME_CONDITION(ASurvivalCharacter, OpenedContainer, COND_OwnerOnly);
 	DOREPLIFETIME(ASurvivalCharacter, Weapon);
 	DOREPLIFETIME(ASurvivalCharacter, bIsAiming);
+	DOREPLIFETIME_CONDITION(ASurvivalCharacter, PlayerPitch, COND_SkipOwner);
 }
 
 void ASurvivalCharacter::TurnAtRate(float Rate)
@@ -167,6 +170,11 @@ void ASurvivalCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * BaseLookUpRate * GetWorld()->GetDeltaSeconds());
+
+	FRotator NormalizedRot = (GetControlRotation() - GetActorRotation()).GetNormalized();
+	PlayerPitch = NormalizedRot.Pitch;
+
+	Server_SetPlayerPitch(PlayerPitch);
 }
 
 void ASurvivalCharacter::MoveForward(float Value)
@@ -385,9 +393,16 @@ void ASurvivalCharacter::SingleInteract()
 
 void ASurvivalCharacter::Interact(bool WasDoubleClick)
 {
+	FVector CamStart = FollowCamera->GetComponentLocation();
+	FVector CamEnd = CamStart + FollowCamera->GetComponentRotation().Vector() * 500.0f;
+	FVector ImpactPoint = LineTraceComp->LineTraceSingle(CamStart, CamEnd).ImpactPoint;
+	if (ImpactPoint.Equals(FVector::ZeroVector))
+		return;
+
 	FVector Start = GetMesh()->GetBoneLocation(FName("head"));
-	FVector End = Start + FollowCamera->GetForwardVector() * 170.0f;
+	FVector End = Start + UKismetMathLibrary::FindLookAtRotation(Start, ImpactPoint).Vector() * 170.0f;
 	FHitResult HitResult = LineTraceComp->LineTraceSingle(Start, End, true);
+
 	if (AActor* Actor = HitResult.GetActor())
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("HIT ACTOR: %s"), *Actor->GetName());
@@ -403,19 +418,19 @@ void ASurvivalCharacter::Interact(bool WasDoubleClick)
 		{
 			if (Cast<APickups>(Actor))
 			{
-				Server_Interact();
+				Server_Interact(End);
 			}
 			else if (Cast<AStorageContainer>(Actor))
 			{
-				Server_Interact();
+				Server_Interact(End);
 			}
 			else if (Cast<AWeaponBase>(Actor))
 			{
-				Server_Interact();
+				Server_Interact(End);
 			}
 			else if (Cast<ADoor>(Actor))
 			{
-				Server_Interact();
+				Server_Interact(End);
 			}
 			else if (AMagazineBase* Magazine = Cast<AMagazineBase>(Actor))
 			{
@@ -424,7 +439,7 @@ void ASurvivalCharacter::Interact(bool WasDoubleClick)
 					if (Weapon->IsCompatibleMagazine(Magazine))
 					{
 						UE_LOG(LogTemp, Warning, TEXT("PICKING UP MAGAZINE CLIENT"));
-						Server_Interact();
+						Server_Interact(End);
 					}
 				}
 			}
@@ -432,18 +447,18 @@ void ASurvivalCharacter::Interact(bool WasDoubleClick)
 	}
 }
 
-bool ASurvivalCharacter::Server_Interact_Validate()
+bool ASurvivalCharacter::Server_Interact_Validate(FVector End)
 {
 	return true;
 }
 
-void ASurvivalCharacter::Server_Interact_Implementation()
+void ASurvivalCharacter::Server_Interact_Implementation(FVector End)
 {
 	if (Role == ROLE_Authority)
 	{
 		FVector Start = GetMesh()->GetBoneLocation(FName("head"));
-		FVector End = Start + FollowCamera->GetForwardVector() * 170.0f;
 		FHitResult HitResult = LineTraceComp->LineTraceSingle(Start, End, true);
+
 		if (AActor* Actor = HitResult.GetActor())
 		{
 			if (APickups* Pickup = Cast<APickups>(Actor))
@@ -528,7 +543,11 @@ void ASurvivalCharacter::Attack()
 {
 	if (Weapon)
 	{
-		Server_Attack(Weapon->Fire());
+		FVector CamStart = FollowCamera->GetComponentLocation();
+		FVector CamEnd = CamStart + FollowCamera->GetComponentRotation().Vector() * 3500.0f;
+		FVector ImpactPoint = LineTraceComp->LineTraceSingle(CamStart, CamEnd).ImpactPoint;
+
+		Server_Attack(Weapon->Fire(ImpactPoint));
 	}
 }
 
@@ -652,6 +671,11 @@ void ASurvivalCharacter::Server_Aim_Implementation(bool Aiming)
 	OnRep_SetAiming();
 }
 
+bool ASurvivalCharacter::IsPlayerAiming()
+{
+	return bIsAiming;
+}
+
 float ASurvivalCharacter::TakeDamage(float Damage, FDamageEvent const & DamageEvent, AController * EventInstigator, AActor * DamageCauser)
 {
 	if (Role < ROLE_Authority || PlayerStatComp->GetHealth() <= 0.0f)
@@ -725,6 +749,21 @@ void ASurvivalCharacter::MultiDie_Implementation()
 	this->GetCharacterMovement()->DisableMovement();
 	this->GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 	this->GetMesh()->SetAllBodiesSimulatePhysics(true);
+}
+
+bool ASurvivalCharacter::Server_SetPlayerPitch_Validate(float Pitch)
+{
+	return true;
+}
+
+void ASurvivalCharacter::Server_SetPlayerPitch_Implementation(float Pitch)
+{
+	PlayerPitch = Pitch;
+}
+
+float ASurvivalCharacter::GetPlayerPitch()
+{
+	return PlayerPitch;
 }
 
 FString ASurvivalCharacter::ReturnPlayerStats()

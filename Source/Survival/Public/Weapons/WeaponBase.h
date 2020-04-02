@@ -72,7 +72,7 @@ public:
 	void SetupWeapon(FName WeaponName);
 	bool CanReloadWeapon();
 	void ReloadWeapon();
-	FHitResult Fire();
+	FHitResult Fire(FVector ImpactPoint);
 	FHitResult Fire(FHitResult ClientHitResult);
 	bool IsCompatibleMagazine(class AMagazineBase* Magazine);
 	void AddMagazine(class AMagazineBase* Magazine);

@@ -69,6 +69,20 @@ protected:
 	bool Server_Aim_Validate(bool Aiming);
 	void Server_Aim_Implementation(bool Aiming);
 
+	UFUNCTION(BlueprintPure)
+		bool IsPlayerAiming();
+
+	UPROPERTY(Replicated)
+		float PlayerPitch;
+
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_SetPlayerPitch(float Pitch);
+	bool Server_SetPlayerPitch_Validate(float Pitch);
+	void Server_SetPlayerPitch_Implementation(float Pitch);
+
+	UFUNCTION(BlueprintPure)
+		float GetPlayerPitch();
+
 	bool DoubleClicked;
 
 	UFUNCTION(BlueprintPure)
@@ -122,9 +136,9 @@ protected:
 	void Interact(bool WasDoubleClick);
 
 	UFUNCTION(Server, Reliable, WithValidation)
-		void Server_Interact();
-	bool Server_Interact_Validate();
-	void Server_Interact_Implementation();
+		void Server_Interact(FVector End);
+	bool Server_Interact_Validate(FVector End);
+	void Server_Interact_Implementation(FVector End);
 
 	UFUNCTION(Server, Reliable, WithValidation)
 		void Server_InventoryClose();
